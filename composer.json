@@ -1,0 +1,18 @@
+{
+    "name": "tohruss/php1",
+    "description": "project php my 1",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "tohruss",
+            "email": "taraskind6@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^7.4 | ^8.0"
+
+    }
+
+}
