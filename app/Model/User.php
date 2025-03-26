@@ -12,15 +12,16 @@ class User extends Model implements IdentityInterface
 
     public $timestamps = false;
     protected $fillable = [
-        'name',
         'login',
-        'password'
+        'password',
+        'role_id'
     ];
 
     protected static function booted()
     {
         static::created(function ($user) {
             $user->password = md5($user->password);
+            $user->role_id = $user->role_id ?? 3;
             $user->save();
         });
     }
@@ -42,5 +43,14 @@ class User extends Model implements IdentityInterface
     {
         return self::where(['login' => $credentials['login'],
             'password' => md5($credentials['password'])])->first();
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+    public function isAdmin(): bool
+    {
+        return $this->role_id === 1;
     }
 }
