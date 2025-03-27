@@ -7,6 +7,8 @@ use Src\View;
 use Src\Request;
 use Model\User;
 use Src\Auth\Auth;
+use Model\Role;
+use Model\Employee;
 
 class Site
 {
@@ -63,12 +65,22 @@ class Site
     {
         $user = app()->auth->user();
         $roleName = $user->role->name ?? 'Пользователь';
+
+        // Загружаем информацию о сотруднике, если это пользователь с id 2 или 3
+        $employeeData = null;
+        if ($user->role_id == 2 || $user->role_id == 3) {
+            $user->load('employee');
+            $employeeData = $user->employee;
+        }
+
         return new View('site.office', [
             'message' => 'Добро пожаловать в личный кабинет',
             'user' => $user,
-            'roleName' => $roleName
+            'roleName' => $roleName,
+            'employeeData' => $employeeData
         ]);
     }
+
     public function create(): string
     {
         return new View('site.hello', ['message' => 'create employees']);
@@ -89,6 +101,61 @@ class Site
         return new View('site.departaments_list', [
             'departaments' => $departaments
         ]);
+    }
+
+    public function createEmployee(Request $request): string
+    {
+        // Проверка прав администратора
+        if (!app()->auth->user()->isAdmin()) {
+            app()->route->redirect('/hello');
+        }
+
+        // Получаем роли для выпадающего списка
+        $roles = Role::whereIn('id', [2, 3])->get();
+
+        if ($request->method === 'POST') {
+            try {
+                // Получаем данные из запроса
+                $data = $request->all();
+
+                // Валидация данных
+                if (empty($data['login']) || empty($data['password']) || empty($data['role_id']) ||
+                    empty($data['last_name']) || empty($data['first_name']) ||
+                    empty($data['gender']) || empty($data['birth_date']) ||
+                    empty($data['address']) || empty($data['position'])) {
+                    throw new \Exception("Все обязательные поля должны быть заполнены");
+                }
+
+                // Создаем пользователя
+                $user = User::create([
+                    'login' => $data['login'],
+                    'password' => $data['password'],
+                    'role_id' => $data['role_id']
+                ]);
+
+                // Создаем сотрудника
+                Employee::create([
+                    'user_id' => $user->id,
+                    'last_name' => $data['last_name'],
+                    'first_name' => $data['first_name'],
+                    'middle_name' => $data['middle_name'] ?? null,
+                    'gender' => $data['gender'],
+                    'birth_date' => $data['birth_date'],
+                    'address' => $data['address'],
+                    'post' => $data['position']
+                ]);
+
+                app()->route->redirect('/employees_list');
+            } catch (\Exception $e) {
+                return new View('site.create', [
+                    'message' => 'Ошибка: ' . $e->getMessage(),
+                    'roles' => $roles,
+                    'old' => $request->all() // Сохраняем введенные данные для повторного заполнения
+                ]);
+            }
+        }
+
+        return new View('site.create', ['roles' => $roles]);
     }
 
 }

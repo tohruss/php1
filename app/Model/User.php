@@ -17,12 +17,11 @@ class User extends Model implements IdentityInterface
         'role_id'
     ];
 
+
     protected static function booted()
     {
-        static::created(function ($user) {
+        static::creating(function ($user) {
             $user->password = md5($user->password);
-            $user->role_id = $user->role_id ?? 3;
-            $user->save();
         });
     }
 
@@ -52,5 +51,10 @@ class User extends Model implements IdentityInterface
     public function isAdmin(): bool
     {
         return $this->role_id === 1;
+    }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class, 'user_id');
     }
 }
