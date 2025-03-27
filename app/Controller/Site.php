@@ -61,6 +61,7 @@ class Site
     {
         return new View('site.hello', ['message' => 'hello working']);
     }
+
     public function office(): string
     {
         $user = app()->auth->user();
@@ -81,20 +82,17 @@ class Site
         ]);
     }
 
-    public function create(): string
-    {
-        return new View('site.hello', ['message' => 'create employees']);
-    }
+
     public function employees_list(): string
     {
-        $employees = \Model\Employee::all();
+        $employees = \Model\Employee::with(['departament', 'subjects'])->get();
         return new View('site.employees_list', ['employees' => $employees]);
     }
 
     public function departaments_list(): string
     {
         // Загружаем кафедры вместе с создателями (только нужные поля)
-        $departaments = \Model\Departament::with(['creator' => function($query) {
+        $departaments = \Model\Departament::with(['creator' => function ($query) {
             $query->select('id', 'login'); // Выбираем только id и login
         }])->get();
 
@@ -103,27 +101,46 @@ class Site
         ]);
     }
 
+    public function subjects_list(): string
+    {
+        $user = app()->auth->user();
+
+        // Проверка прав доступа (админ или сотрудник деканата)
+        if (!$user->isAdmin() && $user->role_id != 2) {
+            app()->route->redirect('/hello');
+        }
+
+        $subjects = \Model\Subject::all();
+
+        return new View('site.subjects_list', [
+            'subjects' => $subjects,
+            'message' => 'Список дисциплин'
+        ]);
+    }
+
     public function createEmployee(Request $request): string
     {
-        // Проверка прав администратора
         if (!app()->auth->user()->isAdmin()) {
             app()->route->redirect('/hello');
         }
 
-        // Получаем роли для выпадающего списка
-        $roles = Role::whereIn('id', [2, 3])->get();
+        $roles = Role::whereIn('id', [2, 3])->get(); // Роли для сотрудников
+        $departaments = \Model\Departament::all();
+        $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
             try {
-                // Получаем данные из запроса
                 $data = $request->all();
 
-                // Валидация данных
-                if (empty($data['login']) || empty($data['password']) || empty($data['role_id']) ||
-                    empty($data['last_name']) || empty($data['first_name']) ||
-                    empty($data['gender']) || empty($data['birth_date']) ||
-                    empty($data['address']) || empty($data['position'])) {
-                    throw new \Exception("Все обязательные поля должны быть заполнены");
+                // Валидация
+                $required = ['login', 'password', 'role_id', 'last_name',
+                    'first_name', 'gender', 'birth_date',
+                    'address', 'position', 'department_id'];
+
+                foreach ($required as $field) {
+                    if (empty($data[$field])) {
+                        throw new \Exception("Поле '$field' обязательно для заполнения");
+                    }
                 }
 
                 // Создаем пользователя
@@ -134,7 +151,7 @@ class Site
                 ]);
 
                 // Создаем сотрудника
-                Employee::create([
+                $employee = Employee::create([
                     'user_id' => $user->id,
                     'last_name' => $data['last_name'],
                     'first_name' => $data['first_name'],
@@ -145,17 +162,158 @@ class Site
                     'post' => $data['position']
                 ]);
 
+                // Привязываем к кафедре
+                $department = \Model\Departament::find($data['department_id']);
+                if ($department) {
+                    $department->update(['user_id' => $user->id]);
+                }
+
+                // Привязываем дисциплину (теперь только одну)
+                if (!empty($data['subject_id'])) {
+                    $employee->subjects()->attach($data['subject_id'], [
+                        'hours' => $data['hours'] ?? '00:00'
+                    ]);
+                }
+
                 app()->route->redirect('/employees_list');
             } catch (\Exception $e) {
                 return new View('site.create', [
                     'message' => 'Ошибка: ' . $e->getMessage(),
                     'roles' => $roles,
-                    'old' => $request->all() // Сохраняем введенные данные для повторного заполнения
+                    'departaments' => $departaments,
+                    'subjects' => $subjects,
+                    'old' => $request->all()
                 ]);
             }
         }
 
-        return new View('site.create', ['roles' => $roles]);
+        return new View('site.create', [
+            'roles' => $roles,
+            'departaments' => $departaments,
+            'subjects' => $subjects
+        ]);
+    }
+
+    public function employeeSearch(Request $request): string
+    {
+        if (app()->auth->user()->role_id != 2) {
+            app()->route->redirect('/hello');
+        }
+
+        $employees = \Model\Employee::orderBy('last_name')->get();
+        $results = null;
+
+        // Используем безопасное получение параметра
+        $employeeId = $request->get('employees_id', null);
+
+        if ($request->method === 'GET' && $employeeId) {
+            $employee = \Model\Employee::with(['subjects' => function($query) {
+                $query->select('name')->withPivot('hours');
+            }])->find($employeeId);
+
+            if ($employee) {
+                $results = [
+                    'employee' => $employee,
+                    'subjects' => $employee->subjects
+                ];
+            }
+        }
+
+        return new View('site.employee_search', [
+            'employees' => $employees,
+            'results' => $results,
+            'request' => $request
+        ]);
+    }
+
+    public function departamentSearch(Request $request): string
+    {
+        // Проверка прав (только для сотрудников деканата)
+        if (!app()->auth->user()->isDeaneryEmployee()) { // Более читаемая проверка
+            app()->route->redirect('/hello');
+        }
+
+        // Получаем выбранную кафедру из запроса
+        $selectedDepartmentId = $request->get('departament_id');
+
+        // Получаем список всех кафедр для выпадающего списка
+        $departments = \Model\Departament::orderBy('name')->get();
+
+        // Если кафедра выбрана - ищем её сотрудников
+        if ($selectedDepartmentId) {
+            // Находим кафедру
+            $department = \Model\Departament::find($selectedDepartmentId);
+
+            // Получаем сотрудников этой кафедры через отношение
+            $employees = $department ? $department->employees()->with('user')->get() : collect();
+        } else {
+            $employees = collect();
+        }
+
+        return new View('site.departament_search', [
+            'departaments' => $departments,
+            'employees' => $employees,
+            'selectedDepartament' => $selectedDepartmentId
+        ]);
+    }
+
+    public function editEmployee(int $id, Request $request): string
+    {
+        $currentUser = app()->auth->user();
+
+        if (!$currentUser->isDeaneryEmployee()) {
+            app()->route->redirect('/hello');
+        }
+
+        $employee = \Model\Employee::with(['user', 'subjects'])->findOrFail($id);
+        $departaments = \Model\Departament::all();
+        $subjects = \Model\Subject::all();
+
+        if ($request->method === 'POST') {
+            $data = $request->all();
+            $errors = [];
+
+            // Валидация
+            if (empty($data['post'])) {
+                $errors[] = 'Должность обязательна для заполнения';
+            }
+
+            if (empty($data['department_id'])) {
+                $errors[] = 'Необходимо выбрать кафедру';
+            }
+
+            if (empty($errors)) {
+                try {
+                    // Обновление сотрудника
+                    $employee->update(['post' => $data['post']]);
+
+                    // Обновление кафедры
+                    $employee->user->departament()->associate($data['department_id']);
+                    $employee->user->save();
+
+                    // Обновление дисциплин
+                    $subjectsData = [];
+                    foreach ($data['subjects'] ?? [] as $subjectId => $subjectData) {
+                        if (!empty($subjectData['id'])) {
+                            $subjectsData[$subjectId] = ['hours' => $subjectData['hours'] ?? 0];
+                        }
+                    }
+                    $employee->subjects()->sync($subjectsData);
+
+                    app()->route->redirect('/employees_list?success=1');
+                } catch (\Exception $e) {
+                    $errors[] = 'Ошибка сохранения: ' . $e->getMessage();
+                }
+            }
+        }
+
+        return new View('site.edit_employee', [
+            'employee' => $employee,
+            'departaments' => $departaments,
+            'subjects' => $subjects,
+            'errors' => $errors ?? [],
+            'old' => $request->all()
+        ]);
     }
 
 }

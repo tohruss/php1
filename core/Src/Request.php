@@ -27,9 +27,10 @@ class Request
         $this->body[$field] = $value;
     }
 
-    public function get($field)
+    public function get(string $key, $default = null)
     {
-        return $this->body[$field];
+        // Добавляем проверку существования ключа
+        return $this->body[$key] ?? $default;
     }
 
     public function files(): array

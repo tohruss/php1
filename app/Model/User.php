@@ -53,8 +53,17 @@ class User extends Model implements IdentityInterface
         return $this->role_id === 1;
     }
 
+    public function isDeaneryEmployee(): bool
+    {
+        return $this->role_id == 2; // ID роли "сотрудник деканата"
+    }
+
     public function employee()
     {
         return $this->hasOne(Employee::class, 'user_id');
+    }
+
+    public function departament() {
+        return $this->hasOne(Departament::class, 'user_id', 'id');
     }
 }

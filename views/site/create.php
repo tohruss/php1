@@ -64,7 +64,38 @@
                 <input type="text" id="position" name="position" required class="form-control">
             </div>
         </div>
-
+        <div class="form-section">
+            <h3>Рабочее место</h3>
+            <div class="form-group">
+                <label for="department_id">Кафедра:</label>
+                <select id="department_id" name="department_id" required class="form-control">
+                    <option value="">-- Выберите кафедру --</option>
+                    <?php foreach ($departaments as $departament): ?>
+                        <option value="<?= $departament->id ?>" <?= isset($old['department_id']) && $old['department_id'] == $departament->id ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($departament->name) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Дисциплины:</label>
+                <div class="subjects-list">
+                    <?php foreach ($subjects as $subject): ?>
+                        <div class="subject-item">
+                            <label class="subject-radio">
+                                <input type="radio" name="subject_id" value="<?= $subject->id ?>"
+                                    <?= isset($old['subject_id']) && $old['subject_id'] == $subject->id ? 'checked' : '' ?>>
+                                <?= htmlspecialchars($subject->name) ?>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="hours-input">
+                    <label>Часы:</label>
+                    <input type="time" name="hours" value="<?= $old['hours'] ?? '00:00' ?>">
+                </div>
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">Зарегистрировать сотрудника</button>
     </form>
 </div>

@@ -15,6 +15,30 @@
                 <p><strong>Должность:</strong> <?= htmlspecialchars($employeeData->post) ?></p>
                 <p><strong>Дата рождения:</strong> <?= date('d.m.Y', strtotime($employeeData->birth_date)) ?></p>
                 <p><strong>Адрес:</strong> <?= htmlspecialchars($employeeData->address) ?></p>
+
+                <!-- Добавленная информация о кафедре -->
+                <p><strong>Кафедра:</strong>
+                    <?php if ($employeeData->department): ?>
+                        <?= htmlspecialchars($employeeData->department->name) ?>
+                    <?php else: ?>
+                        Не назначена
+                    <?php endif; ?>
+                </p>
+
+                <!-- Добавленная информация о дисциплинах -->
+                <p><strong>Дисциплины:</strong></p>
+                <?php if ($employeeData->subjects->isNotEmpty()): ?>
+                    <ul class="subject-list">
+                        <?php foreach ($employeeData->subjects as $subject): ?>
+                            <li>
+                                <?= htmlspecialchars($subject->name) ?>
+                                (<?= date('H:i', strtotime($subject->pivot->hours)) ?> ч.)
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php else: ?>
+                    <p>Нет назначенных дисциплин</p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -26,6 +50,10 @@
                 <a href="<?= app()->route->getUrl('/employees_list') ?>">Список сотрудников</a>
                 <a href="<?= app()->route->getUrl('/departaments_list') ?>">Список кафедр</a>
                 <a href="<?= app()->route->getUrl('/subjects_list') ?>">Список дисциплин</a>
+                <?php if ($user->role_id == 2): ?>
+                    <a href="<?= app()->route->getUrl('/employee_search') ?>" class="btn btn-primary">Поиск дисциплины</a>
+                    <a href="<?= app()->route->getUrl('/departament_search') ?>" class="btn btn-primary">Поиск кафедры</a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
