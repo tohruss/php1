@@ -14,7 +14,8 @@ class User extends Model implements IdentityInterface
     protected $fillable = [
         'login',
         'password',
-        'role_id'
+        'role_id',
+        'avatar'
     ];
 
 

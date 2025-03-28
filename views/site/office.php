@@ -1,9 +1,21 @@
 <div class="office-container">
     <h2><?= $message ?></h2>
     <div class="user-info">
-        <p><strong>Логин:</strong> <?= $user->login ?></p>
-        <p><strong>Роль:</strong> <?= $roleName ?></p>
-
+        <div class="office_user">
+            <div class="avatar-container">
+                <?php if ($user->avatar): ?>
+                    <img src="/<?= htmlspecialchars($user->avatar) ?>"
+                         alt="Аватар"
+                         class="avatar-image">
+                <?php else: ?>
+                    <div class="avatar-placeholder">Нет аватара</div>
+                <?php endif; ?>
+            </div>
+            <div>
+                <p><strong>Логин:</strong> <?= $user->login ?></p>
+                <p><strong>Роль:</strong> <?= $roleName ?></p>
+            </div>
+        </div>
         <?php if ($employeeData): ?>
             <div class="employee-info">
                 <h3>Информация о сотруднике:</h3>

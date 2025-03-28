@@ -250,3 +250,17 @@ h2 {
 .subject-list li {
     margin-bottom: 5px;
 }
+.avatar-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid gray;
+}
+.office_user{
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+

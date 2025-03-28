@@ -1,8 +1,8 @@
 <div class="container mt-4">
     <h2>Редактирование сотрудника: <?= htmlspecialchars($employee->getFullName()) ?></h2>
 
-    <form method="POST" action="/employees/<?= $employee->id ?>/edit">
-        <input name="csrf_token" type="hidden" value="<?= app()->auth::generateCSRF() ?>"/>
+    <form method="POST" action="/employees/<?= $employee->id ?>/edit" enctype="multipart/form-data">
+        <input name="csrf_token" type="hidden" value="<?= app()->auth::generateCSRF() ?>" />
 
         <?php if (isset($errors) && !empty($errors)): ?>
             <div class="alert alert-danger">
@@ -15,7 +15,26 @@
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+        <div class="mb-3">
+            <label class="form-label">Аватар</label>
+            <input type="file"
+                   name="avatar"
+                   accept="image/jpeg, image/png, image/jpg"
+                   class="form-control <?= !empty($errors['avatar']) ? 'is-invalid' : '' ?>">
 
+            <?php if (!empty($errors['avatar'])): ?>
+                <div class="invalid-feedback">
+                    <?= implode(', ', $errors['avatar']) ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($employee->user->avatar): ?>
+                <div class="current-avatar mt-2">
+                    <img src="/<?= htmlspecialchars($employee->user->avatar) ?>"
+                         alt="Текущий аватар"
+                         style="max-width: 200px;">
+                </div>
+            <?php endif; ?>
+        </div>
         <div class="mb-3">
             <label class="form-label">Должность</label>
             <input type="text" name="post"
