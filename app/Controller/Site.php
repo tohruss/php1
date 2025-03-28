@@ -3,13 +3,11 @@
 namespace Controller;
 
 use Model\Post;
+use Src\Validator\Validator;
 use Src\View;
 use Src\Request;
 use Model\User;
 use Src\Auth\Auth;
-use Model\Role;
-use Model\Employee;
-
 class Site
 {
     public function login(Request $request): string
@@ -35,15 +33,28 @@ class Site
     public function signup(Request $request): string
     {
         if ($request->method === 'POST') {
+            // Валидация данных
+            $validator = new Validator($request->all(), [
+                'name' => ['required'],
+                'login' => ['required', 'unique:users,login'],
+                'password' => ['required']
+            ], [
+                'required' => 'Поле :field пусто',
+                'unique' => 'Поле :field должно быть уникально'
+            ]);
+
+            if ($validator->fails()) {
+                return new View('site.signup', [
+                    'message' => json_encode($validator->errors(), JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+
             // Подготовка данных для регистрации
             $userData = $request->all();
-
-            // Устанавливаем роль: 1 - админ, если чекбокс отмечен, иначе 3 - обычный пользователь
             $userData['role_id'] = isset($userData['is_admin']) && $userData['is_admin'] == '1' ? 1 : 3;
-
-            // Удаляем поле is_admin, так как в модели его нет
             unset($userData['is_admin']);
 
+            // Создание пользователя
             if (User::create($userData)) {
                 app()->route->redirect('/hello');
             }

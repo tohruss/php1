@@ -6,6 +6,7 @@ use Model\Employee;
 use Model\Role;
 use Model\User;
 use Src\Request;
+use Src\Validator\Validator;
 use Src\View;
 
 class EmployeeController
@@ -22,33 +23,56 @@ class EmployeeController
             app()->route->redirect('/hello');
         }
 
-        $roles = Role::whereIn('id', [2, 3])->get(); // Роли для сотрудников
+        $roles = Role::whereIn('id', [2, 3])->get();
         $departaments = \Model\Departament::all();
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
+            $validator = new Validator($request->all(), [
+                'login' => ['required', 'unique:users,login'],
+                'password' => ['required', 'min:6'],
+                'role_id' => ['required', 'exists:roles,id'],
+                'last_name' => ['required', 'regex:/^[А-ЯЁа-яё -]+$/u'],
+                'first_name' => ['required', 'regex:/^[А-ЯЁа-яё -]+$/u'],
+                'middle_name' => ['nullable', 'regex:/^[А-ЯЁа-яё -]+$/u'],
+                'gender' => ['required', 'in:1,2'],
+                'birth_date' => ['required', 'date'],
+                'address' => ['required'],
+                'position' => ['required'],
+                'department_id' => ['required', 'exists:departaments,id'],
+                'subject_id' => ['nullable', 'exists:subjects,id'],
+                'hours' => ['required_with:subject_id', 'date_format:H:i']
+            ], [
+                'required' => 'Поле :field обязательно для заполнения',
+                'unique' => 'Логин уже занят',
+                'exists' => 'Некорректное значение',
+                'min' => 'Минимум :min символов',
+                'regex' => 'Допустимы только русские буквы и дефисы',
+                'date' => 'Некорректная дата',
+                'in' => 'Некорректный пол',
+                'date_format' => 'Формат времени: ЧЧ:ММ',
+                'required_with' => 'Укажите часы для дисциплины'
+            ]);
+
+            if ($validator->fails()) {
+                return new View('site.create', [
+                    'errors' => $validator->errors(),
+                    'old' => $request->all(),
+                    'roles' => $roles,
+                    'departaments' => $departaments,
+                    'subjects' => $subjects
+                ]);
+            }
+
             try {
                 $data = $request->all();
 
-                // Валидация
-                $required = ['login', 'password', 'role_id', 'last_name',
-                    'first_name', 'gender', 'birth_date',
-                    'address', 'position', 'department_id'];
-
-                foreach ($required as $field) {
-                    if (empty($data[$field])) {
-                        throw new \Exception("Поле '$field' обязательно для заполнения");
-                    }
-                }
-
-                // Создаем пользователя
                 $user = User::create([
                     'login' => $data['login'],
                     'password' => $data['password'],
                     'role_id' => $data['role_id']
                 ]);
 
-                // Создаем сотрудника
                 $employee = Employee::create([
                     'user_id' => $user->id,
                     'last_name' => $data['last_name'],
@@ -60,14 +84,10 @@ class EmployeeController
                     'post' => $data['position']
                 ]);
 
-                // Привязываем к кафедре
-                $departament = \Model\Departament::find($data['department_id']);
-                if ($departament) {
-                    $user->update(['id' => $user->id]); // Если user_id в departaments ссылается на users.id
+                if ($departament = \Model\Departament::find($data['department_id'])) {
                     $departament->update(['user_id' => $user->id]);
                 }
 
-                // Привязываем дисциплину (теперь только одну)
                 if (!empty($data['subject_id'])) {
                     $employee->subjects()->attach($data['subject_id'], [
                         'hours' => $data['hours'] ?? '00:00'
@@ -77,11 +97,11 @@ class EmployeeController
                 app()->route->redirect('/employees_list');
             } catch (\Exception $e) {
                 return new View('site.create', [
-                    'message' => 'Ошибка: ' . $e->getMessage(),
+                    'errors' => ['database' => ['Ошибка сохранения данных']],
+                    'old' => $request->all(),
                     'roles' => $roles,
                     'departaments' => $departaments,
-                    'subjects' => $subjects,
-                    'old' => $request->all()
+                    'subjects' => $subjects
                 ]);
             }
         }
@@ -102,13 +122,14 @@ class EmployeeController
         $employees = \Model\Employee::orderBy('last_name')->get();
         $results = null;
 
-        // Используем безопасное получение параметра
-        $employeeId = $request->get('employees_id', null);
+        // Валидация и санитизация входных данных
+        $employeeId = (int)$request->get('employees_id', 0);
 
-        if ($request->method === 'GET' && $employeeId) {
+        if ($request->method === 'GET' && $employeeId > 0) {
+            // Используем безопасный запрос через Eloquent ORM
             $employee = \Model\Employee::with(['subjects' => function($query) {
                 $query->select('name')->withPivot('hours');
-            }])->find($employeeId);
+            }])->where('id', $employeeId)->first();
 
             if ($employee) {
                 $results = [
@@ -136,43 +157,63 @@ class EmployeeController
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
-            $data = $request->all();
-            $errors = [];
+            $validator = new Validator($request->all(), [
+                'post' => ['required', 'min:3'],
+                'subject_id' => ['nullable', 'exists:subjects,id'],
+                'hours' => ['required_with:subject_id', 'date_format:H:i']
+            ], [
+                'required' => 'Поле :field обязательно для заполнения',
+                'min' => 'Минимум :min символа',
+                'exists' => 'Некорректная дисциплина',
+                'date_format' => 'Формат времени: ЧЧ:ММ',
+                'required_with' => 'Укажите часы для дисциплины'
+            ]);
 
-            // Валидация
-            if (empty($data['post'])) {
-                $errors[] = 'Должность обязательна для заполнения';
+            if ($validator->fails()) {
+                return new View('site.edit_employee', [
+                    'employee' => $employee,
+                    'subjects' => $subjects,
+                    'hours' => $request->get('hours', '00:00'),
+                    'errors' => $validator->errors(),
+                    'old' => $request->all()
+                ]);
             }
 
-            if (empty($errors)) {
-                try {
-                    // Обновление должности
-                    $employee->update(['post' => $data['post']]);
+            try {
+                $data = $request->all();
 
-                    // Обновление дисциплин и часов
-                    if (!empty($data['subject_id'])) {
-                        $hours = $data['hours'] . ':00'; // Форматируем время
-                        $employee->subjects()->sync([
-                            $data['subject_id'] => ['hours' => $hours]
-                        ]);
-                    }
+                // Обновление должности
+                $employee->update(['post' => $data['post']]);
 
-                    app()->route->redirect('/employees_list?success=1');
-                } catch (\Exception $e) {
-                    $errors[] = 'Ошибка: ' . $e->getMessage();
+                // Обновление дисциплин и часов
+                if (!empty($data['subject_id'])) {
+                    $employee->subjects()->sync([
+                        $data['subject_id'] => ['hours' => $data['hours'] ?? '00:00']
+                    ]);
+                } else {
+                    $employee->subjects()->detach();
                 }
+
+                app()->route->redirect('/employees_list?success=1');
+            } catch (\Exception $e) {
+                return new View('site.edit_employee', [
+                    'employee' => $employee,
+                    'subjects' => $subjects,
+                    'hours' => $request->get('hours', '00:00'),
+                    'errors' => ['database' => ['Ошибка сохранения: ' . $e->getMessage()]],
+                    'old' => $request->all()
+                ]);
             }
         }
 
-        // Получаем текущие часы
         $hours = $employee->subjects->first()->pivot->hours ?? '00:00';
-        $formattedHours = substr($hours, 0, 5); // Обрезаем секунды
+        $formattedHours = substr($hours, 0, 5);
 
         return new View('site.edit_employee', [
             'employee' => $employee,
             'subjects' => $subjects,
             'hours' => $formattedHours,
-            'errors' => $errors ?? [],
+            'errors' => [],
             'old' => $request->all()
         ]);
     }
