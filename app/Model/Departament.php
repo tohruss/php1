@@ -17,8 +17,9 @@ class Departament extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function user() {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id'); // Обратная связь
     }
 
     public function employees()

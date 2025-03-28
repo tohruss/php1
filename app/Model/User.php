@@ -58,12 +58,13 @@ class User extends Model implements IdentityInterface
         return $this->role_id == 2; // ID роли "сотрудник деканата"
     }
 
+    public function department()
+    {
+        return $this->belongsTo(Departament::class, 'user_id');
+    }
+
     public function employee()
     {
         return $this->hasOne(Employee::class, 'user_id');
-    }
-
-    public function departament() {
-        return $this->hasOne(Departament::class, 'user_id', 'id');
     }
 }

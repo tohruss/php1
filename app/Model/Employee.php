@@ -23,7 +23,7 @@ class Employee extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function subjects()
@@ -36,15 +36,15 @@ class Employee extends Model
         )->withPivot('hours');
     }
 
-    public function departament()
+    public function department()
     {
         return $this->hasOneThrough(
             Departament::class,
             User::class,
-            'id',
-            'user_id',
-            'user_id',
-            'id'
+            'id', // Поле в users
+            'user_id', // Поле в departaments
+            'user_id', // Поле в employees
+            'id' // Поле в users
         );
     }
 

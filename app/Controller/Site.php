@@ -85,7 +85,7 @@ class Site
 
     public function employees_list(): string
     {
-        $employees = \Model\Employee::with(['departament', 'subjects'])->get();
+        $employees = \Model\Employee::with(['user.department', 'subjects'])->get();
         return new View('site.employees_list', ['employees' => $employees]);
     }
 
@@ -163,9 +163,10 @@ class Site
                 ]);
 
                 // Привязываем к кафедре
-                $department = \Model\Departament::find($data['department_id']);
-                if ($department) {
-                    $department->update(['user_id' => $user->id]);
+                $departament = \Model\Departament::find($data['department_id']);
+                if ($departament) {
+                    $user->update(['id' => $user->id]); // Если user_id в departaments ссылается на users.id
+                    $departament->update(['user_id' => $user->id]);
                 }
 
                 // Привязываем дисциплину (теперь только одну)
@@ -237,21 +238,21 @@ class Site
         $selectedDepartmentId = $request->get('departament_id');
 
         // Получаем список всех кафедр для выпадающего списка
-        $departments = \Model\Departament::orderBy('name')->get();
+        $departaments = \Model\Departament::orderBy('name')->get();
 
         // Если кафедра выбрана - ищем её сотрудников
         if ($selectedDepartmentId) {
             // Находим кафедру
-            $department = \Model\Departament::find($selectedDepartmentId);
+            $departament = \Model\Departament::find($selectedDepartmentId);
 
             // Получаем сотрудников этой кафедры через отношение
-            $employees = $department ? $department->employees()->with('user')->get() : collect();
+            $employees = $departament ? $departament->employees()->with('user')->get() : collect();
         } else {
             $employees = collect();
         }
 
         return new View('site.departament_search', [
-            'departaments' => $departments,
+            'departaments' => $departaments,
             'employees' => $employees,
             'selectedDepartament' => $selectedDepartmentId
         ]);
@@ -265,8 +266,7 @@ class Site
             app()->route->redirect('/hello');
         }
 
-        $employee = \Model\Employee::with(['user', 'subjects'])->findOrFail($id);
-        $departaments = \Model\Departament::all();
+        $employee = \Model\Employee::with(['subjects'])->findOrFail($id);
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
@@ -278,42 +278,41 @@ class Site
                 $errors[] = 'Должность обязательна для заполнения';
             }
 
-            if (empty($data['department_id'])) {
-                $errors[] = 'Необходимо выбрать кафедру';
-            }
-
             if (empty($errors)) {
                 try {
-                    // Обновление сотрудника
+                    // Обновление должности
                     $employee->update(['post' => $data['post']]);
 
-                    // Обновление кафедры
-                    $employee->user->departament()->associate($data['department_id']);
-                    $employee->user->save();
-
-                    // Обновление дисциплин
-                    $subjectsData = [];
-                    foreach ($data['subjects'] ?? [] as $subjectId => $subjectData) {
-                        if (!empty($subjectData['id'])) {
-                            $subjectsData[$subjectId] = ['hours' => $subjectData['hours'] ?? 0];
-                        }
+                    // Обновление дисциплин и часов
+                    if (!empty($data['subject_id'])) {
+                        $hours = $data['hours'] . ':00'; // Форматируем время
+                        $employee->subjects()->sync([
+                            $data['subject_id'] => ['hours' => $hours]
+                        ]);
                     }
-                    $employee->subjects()->sync($subjectsData);
 
                     app()->route->redirect('/employees_list?success=1');
                 } catch (\Exception $e) {
-                    $errors[] = 'Ошибка сохранения: ' . $e->getMessage();
+                    $errors[] = 'Ошибка: ' . $e->getMessage();
                 }
             }
         }
 
+        // Получаем текущие часы
+        $hours = $employee->subjects->first()->pivot->hours ?? '00:00';
+        $formattedHours = substr($hours, 0, 5); // Обрезаем секунды
+
         return new View('site.edit_employee', [
             'employee' => $employee,
-            'departaments' => $departaments,
             'subjects' => $subjects,
+            'hours' => $formattedHours,
             'errors' => $errors ?? [],
             'old' => $request->all()
         ]);
+    }
+    private function formatTimeForInput(string $time): string
+    {
+        return substr($time, 0, 5); // Обрезаем секунды
     }
 
 }

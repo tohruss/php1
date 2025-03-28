@@ -17,45 +17,30 @@
                    value="<?= htmlspecialchars($old['post'] ?? $employee->post) ?>" required>
         </div>
 
-        <!-- Выбор существующей кафедры -->
-        <div class="mb-3">
-            <label class="form-label">Кафедра</label>
-            <select name="department_id" class="form-select" required>
-                <option value="">-- Выберите кафедру --</option>
-                <?php foreach ($departaments as $department): ?>
-                    <option value="<?= $department->id ?>"
-                        <?= ($employee->user->department && $employee->user->department->id == $department->id) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($department->name) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
-        <!-- Радио-кнопки для дисциплин -->
+        <!-- Дисциплины -->
         <div class="mb-3">
             <label class="form-label">Дисциплина</label>
             <?php foreach ($subjects as $subject): ?>
                 <div class="form-check">
                     <input class="form-check-input" type="radio"
                            name="subject_id"
-                           id="subject_<?= $subject->id ?>"
                            value="<?= $subject->id ?>"
                         <?= $employee->subjects->contains($subject->id) ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="subject_<?= $subject->id ?>">
+                    <label class="form-check-label">
                         <?= htmlspecialchars($subject->name) ?>
                     </label>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <!-- Поле для часов -->
+        <!-- Поле часов -->
         <div class="mb-3">
             <label class="form-label">Часы</label>
-            <input type="number" name="hours" class="form-control"
-                   value="<?= $employee->subjects->first()->pivot->hours ?? 0 ?>"
-                   min="0" step="0.5" required>
+            <input type="time" name="hours"
+                   value="<?= htmlspecialchars($hours ?? '00:00') ?>"
+                   required step="1800">
         </div>
 
-        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
     </form>
 </div>
