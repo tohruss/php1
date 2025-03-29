@@ -9,6 +9,7 @@ return [
         'auth' => \Middlewares\AuthMiddleware::class,
         'admin' => \Middlewares\AdminMiddleware::class,
         'deanery' => \Middlewares\DeaneryMiddleware::class,
+        'admin_or_deanery' => \Middlewares\AdminOrDeaneryMiddleware::class,
     ],
     'validators' => [
         'required' => \Validators\RequireValidator::class,
