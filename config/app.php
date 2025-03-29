@@ -8,6 +8,7 @@ return [
     'routeMiddleware' => [
         'auth' => \Middlewares\AuthMiddleware::class,
         'admin' => \Middlewares\AdminMiddleware::class,
+        'deanery' => \Middlewares\DeaneryMiddleware::class,
     ],
     'validators' => [
         'required' => \Validators\RequireValidator::class,
