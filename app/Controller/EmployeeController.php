@@ -8,6 +8,7 @@ use Model\User;
 use Src\Request;
 use Src\Validator\Validator;
 use Src\View;
+use Collect\Validation;
 
 class EmployeeController
 {
@@ -30,18 +31,18 @@ class EmployeeController
         if ($request->method === 'POST') {
             $validator = new Validator($request->all(), [
                 'login' => ['required', 'unique:users,login'],
-                'password' => ['required', 'min:6'],
+                'password' => ['required', Validation::PASSWORD],
                 'role_id' => ['required', 'exists:roles,id'],
-                'last_name' => ['required', 'regex:/^[А-ЯЁа-яё -]+$/u'],
-                'first_name' => ['required', 'regex:/^[А-ЯЁа-яё -]+$/u'],
-                'middle_name' => ['nullable', 'regex:/^[А-ЯЁа-яё -]+$/u'],
+                'last_name' => ['required', Validation::NAME_PATTERN],
+                'first_name' => ['required', Validation::NAME_PATTERN],
+                'middle_name' => ['nullable', Validation::NAME_PATTERN],
                 'gender' => ['required', 'in:1,2'],
                 'birth_date' => ['required', 'date'],
-                'address' => ['required'],
-                'position' => ['required'],
+                'address' => ['required',Validation::NAME_PATTERN],
+                'position' => ['required',Validation::NAME_PATTERN],
                 'department_id' => ['required', 'exists:departaments,id'],
                 'subject_id' => ['nullable', 'exists:subjects,id'],
-                'hours' => ['required_with:subject_id', 'date_format:H:i']
+                'hours' => ['required_with:subject_id', Validation::HOURS_PATTERN]
             ], [
                 'required' => 'Поле :field обязательно для заполнения',
                 'unique' => 'Логин уже занят',
@@ -158,9 +159,9 @@ class EmployeeController
 
         if ($request->method === 'POST') {
             $validator = new Validator($request->all(), [
-                'post' => ['required', 'min:3'],
+                'post' => ['required', Validation::NAME_PATTERN],
                 'subject_id' => ['nullable', 'exists:subjects,id'],
-                'hours' => ['required_with:subject_id', 'date_format:H:i'],
+                'hours' => ['required_with:subject_id', Validation::HOURS_PATTERN],
                 'avatar' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048']
             ], [
                 'required' => 'Поле :field обязательно для заполнения',

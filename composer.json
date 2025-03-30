@@ -15,7 +15,8 @@
         "illuminate/database": "^10.x-dev",
         "illuminate/events": "^10.x-dev",
         "nikic/fast-route": "^2.0@dev",
-        "tohruss/collect": "dev-main"
+        "tohruss/collect": "dev-main",
+        "tohruss/validation": "dev-main"
 
 
     },
