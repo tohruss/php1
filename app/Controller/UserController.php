@@ -12,7 +12,7 @@ class UserController
         $roleName = $user->role->name ?? 'Пользователь';
         $employeeData = null;
 
-        if ($user->role_id == 2 || $user->role_id == 3) {
+        if (in_array($roleName, ['Сотрудник деканата', 'Сотрудник'])) {
             $user->load('employee');
             $employeeData = $user->employee;
         }

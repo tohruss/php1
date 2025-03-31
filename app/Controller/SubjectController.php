@@ -11,7 +11,7 @@ class SubjectController
         $user = app()->auth->user();
 
         // Проверка прав доступа (админ или сотрудник деканата)
-        if (!$user->isAdmin() && $user->role_id != 2) {
+        if (!$user->isAdmin() && !$user->isDeaneryEmployee()) {
             app()->route->redirect('/hello');
         }
 

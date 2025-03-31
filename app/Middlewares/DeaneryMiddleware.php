@@ -9,8 +9,8 @@ class DeaneryMiddleware
 {
     public function handle(Request $request, $params = null)
     {
-        // Проверяем, что пользователь авторизован и является сотрудником деканата
-        if (!Auth::check() || Auth::user()->role_id !== 2) {
+        $user = Auth::user();
+        if (!Auth::check() || !$user->isDeaneryEmployee()) {
             app()->route->redirect('/hello');
         }
     }

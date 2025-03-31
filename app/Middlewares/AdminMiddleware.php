@@ -9,8 +9,8 @@ class AdminMiddleware
 {
     public function handle(Request $request, $params = null)
     {
-        // Проверяем, что пользователь авторизован и является администратором
-        if (!Auth::check() || Auth::user()->role_id !== 1) {
+        $user = Auth::user();
+        if (!Auth::check() || !$user->isAdmin()) {
             app()->route->redirect('/hello');
         }
     }

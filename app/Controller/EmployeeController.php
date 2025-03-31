@@ -96,7 +96,8 @@ class EmployeeController
 
     public function employeeSearch(Request $request): string
     {
-        if (app()->auth->user()->role_id != 2) {
+        $user = app()->auth->user();
+        if (!$user->isDeaneryEmployee()) {
             app()->route->redirect('/hello');
         }
 
