@@ -8,7 +8,7 @@ use Model\User;
 use Src\Request;
 use Src\Validator\Validator;
 use Src\View;
-use Collect\Validation;
+
 
 class EmployeeController
 {
@@ -24,36 +24,16 @@ class EmployeeController
             app()->route->redirect('/hello');
         }
 
-        $roles = Role::whereIn('id', [2, 3])->get();
+        $roles = Role::whereIn('name', ['Сотрудник деканата', 'Сотрудник'])->get();
         $departaments = \Model\Departament::all();
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
-            $validator = new Validator($request->all(), [
-                'login' => ['required', 'unique:users,login'],
-                'password' => ['required', Validation::PASSWORD],
-                'role_id' => ['required', 'exists:roles,id'],
-                'last_name' => ['required', Validation::NAME_PATTERN],
-                'first_name' => ['required', Validation::NAME_PATTERN],
-                'middle_name' => ['nullable', Validation::NAME_PATTERN],
-                'gender' => ['required', 'in:1,2'],
-                'birth_date' => ['required', 'date'],
-                'address' => ['required',Validation::NAME_PATTERN],
-                'position' => ['required',Validation::NAME_PATTERN],
-                'department_id' => ['required', 'exists:departaments,id'],
-                'subject_id' => ['nullable', 'exists:subjects,id'],
-                'hours' => ['required_with:subject_id', Validation::HOURS_PATTERN]
-            ], [
-                'required' => 'Поле :field обязательно для заполнения',
-                'unique' => 'Логин уже занят',
-                'exists' => 'Некорректное значение',
-                'min' => 'Минимум :min символов',
-                'regex' => 'Допустимы только русские буквы и дефисы',
-                'date' => 'Некорректная дата',
-                'in' => 'Некорректный пол',
-                'date_format' => 'Формат времени: ЧЧ:ММ',
-                'required_with' => 'Укажите часы для дисциплины'
-            ]);
+            $validator = new Validator(
+                $request->all(),
+                Employee::$createValidationRules,
+                Employee::$createValidationMessages
+            );
 
             if ($validator->fails()) {
                 return new View('site.create', [
@@ -158,21 +138,11 @@ class EmployeeController
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
-            $validator = new Validator($request->all(), [
-                'post' => ['required', Validation::NAME_PATTERN],
-                'subject_id' => ['nullable', 'exists:subjects,id'],
-                'hours' => ['required_with:subject_id', Validation::HOURS_PATTERN],
-                'avatar' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048']
-            ], [
-                'required' => 'Поле :field обязательно для заполнения',
-                'min' => 'Минимум :min символа',
-                'exists' => 'Некорректная дисциплина',
-                'date_format' => 'Формат времени: ЧЧ:ММ',
-                'required_with' => 'Укажите часы для дисциплины',
-                'file' => 'Поле :field должно быть файлом',
-                'mimes' => 'Допустимые форматы: jpg, jpeg, png',
-                'max' => 'Максимальный размер файла: 2 МБ'
-            ]);
+            $validator = new Validator(
+                $request->all(),
+                Employee::$editValidationRules,
+                Employee::$editValidationMessages
+            );
 
             if ($validator->fails()) {
                 return new View('site.edit_employee', [
