@@ -12,16 +12,29 @@ class Site
 {
     public function login(Request $request): string
     {
-        //Если просто обращение к странице, то отобразить форму
         if ($request->method === 'GET') {
             return new View('site.login');
         }
-        //Если удалось аутентифицировать пользователя, то редирект
-        if (Auth::attempt($request->all())) {
-            app()->route->redirect('/hello');
+
+        $validator = new Validator($request->all(), [
+            'login' => ['required'],
+            'password' => ['required'],
+        ], [
+            'required' => 'Поле :field пусто',
+        ]);
+
+        if ($validator->fails()) {
+            return new View('site.login', [
+                'message' => json_encode($validator->errors(), JSON_UNESCAPED_UNICODE)
+            ]);
         }
-        //Если аутентификация не удалась, то сообщение об ошибке
-        return new View('site.login', ['message' => 'Неправильные логин или пароль']);
+
+        if (Auth::attempt($request->all())) {
+            app()->route->redirect('/office');
+            return '';
+        }
+
+        return new View('site.login', ['message' => 'Вы ввели некорректные данные']);
     }
 
     public function logout(): void
@@ -33,49 +46,31 @@ class Site
     public function signup(Request $request): string
     {
         if ($request->method === 'POST') {
-            // Валидация данных
             $validator = new Validator($request->all(), [
                 'login' => ['required', 'unique:users,login'],
                 'password' => ['required']
             ], [
-                'required' => 'Поле :field обязательно для заполнения',
-                'unique' => 'Пользователь с таким :field уже существует'
+                'required' => 'Поле :field пусто',
+                'unique' => 'Поле :field должно быть уникально'
             ]);
 
             if ($validator->fails()) {
                 return new View('site.signup', [
-                    'errors' => $validator->errors(),
-                    'old' => $request->all()
+                    'message' => json_encode($validator->errors(), JSON_UNESCAPED_UNICODE)
                 ]);
             }
 
-            try {
-                // Подготовка данных для регистрации
-                $userData = $request->all();
-                $userData['role_id'] = isset($userData['is_admin']) && $userData['is_admin'] == '1' ? 1 : 3;
-                unset($userData['is_admin']);
+            $userData = $request->all();
+            $userData['role_id'] = 1;
 
-                // Создание пользователя
-                if (User::create($userData)) {
-                    app()->route->redirect('/hello');
-                }
-            } catch (\PDOException $e) {
-                // Обработка ошибки дубликата логина
-                if (strpos($e->getMessage(), 'Integrity constraint violation') !== false) {
-                    return new View('site.signup', [
-                        'errors' => ['login' => ['Пользователь с таким логином уже существует']],
-                        'old' => $request->all()
-                    ]);
-                }
-                // Обработка других ошибок
-                return new View('site.signup', [
-                    'errors' => ['database' => ['Ошибка регистрации: ' . $e->getMessage()]],
-                    'old' => $request->all()
-                ]);
+            if (User::create($userData)) {
+                app()->route->redirect('/login');
+                return '';
             }
         }
         return new View('site.signup');
     }
+
 
     public function index(Request $request): string
     {

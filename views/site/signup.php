@@ -1,12 +1,4 @@
-<?php if (!empty($errors)): ?>
-    <div class="alert alert-danger">
-        <?php foreach ($errors as $field => $messages): ?>
-            <?php foreach ($messages as $message): ?>
-                <?= str_replace(':field', $field, $message) ?><br>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
+<h3><?= $message ?? '' ?></h3>
 
 <form method="post">
     <input name="csrf_token" type="hidden" value="<?= app()->auth::generateCSRF() ?>"/>

@@ -161,7 +161,7 @@ class EmployeeController
 
                     // Обработка аватара
                     if (!empty($_FILES['avatar']['tmp_name'])) {
-                        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/public/storage/avatars/';
+                        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/public/storage/img/';
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0755, true);
                         }
@@ -177,7 +177,7 @@ class EmployeeController
                         $destination = $uploadDir . $filename;
 
                         if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
-                            $employee->user->avatar = 'storage/avatars/' . $filename;
+                            $employee->user->avatar = 'storage/img/' . $filename;
                             $employee->user->save();
                         }
                     }

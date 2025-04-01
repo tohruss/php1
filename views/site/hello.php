@@ -1,2 +1,2 @@
 <h2><?= $message ?? ''; ?></h2>
-<img src="/public/avatars/разработка.png">
+<img src="/public/img/разработка.png">
