@@ -35,28 +35,43 @@ class Site
         if ($request->method === 'POST') {
             // Валидация данных
             $validator = new Validator($request->all(), [
-                'name' => ['required'],
                 'login' => ['required', 'unique:users,login'],
                 'password' => ['required']
             ], [
-                'required' => 'Поле :field пусто',
-                'unique' => 'Поле :field должно быть уникально'
+                'required' => 'Поле :field обязательно для заполнения',
+                'unique' => 'Пользователь с таким :field уже существует'
             ]);
 
             if ($validator->fails()) {
                 return new View('site.signup', [
-                    'message' => json_encode($validator->errors(), JSON_UNESCAPED_UNICODE)
+                    'errors' => $validator->errors(),
+                    'old' => $request->all()
                 ]);
             }
 
-            // Подготовка данных для регистрации
-            $userData = $request->all();
-            $userData['role_id'] = isset($userData['is_admin']) && $userData['is_admin'] == '1' ? 1 : 3;
-            unset($userData['is_admin']);
+            try {
+                // Подготовка данных для регистрации
+                $userData = $request->all();
+                $userData['role_id'] = isset($userData['is_admin']) && $userData['is_admin'] == '1' ? 1 : 3;
+                unset($userData['is_admin']);
 
-            // Создание пользователя
-            if (User::create($userData)) {
-                app()->route->redirect('/hello');
+                // Создание пользователя
+                if (User::create($userData)) {
+                    app()->route->redirect('/hello');
+                }
+            } catch (\PDOException $e) {
+                // Обработка ошибки дубликата логина
+                if (strpos($e->getMessage(), 'Integrity constraint violation') !== false) {
+                    return new View('site.signup', [
+                        'errors' => ['login' => ['Пользователь с таким логином уже существует']],
+                        'old' => $request->all()
+                    ]);
+                }
+                // Обработка других ошибок
+                return new View('site.signup', [
+                    'errors' => ['database' => ['Ошибка регистрации: ' . $e->getMessage()]],
+                    'old' => $request->all()
+                ]);
             }
         }
         return new View('site.signup');

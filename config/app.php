@@ -14,9 +14,6 @@ return [
     'validators' => [
         'required' => \Validators\RequireValidator::class,
         'unique' => \Validators\UniqueValidator::class,
-        'file' => \Validators\FileValidator::class,
-        'mimes' => \Validators\MimesValidator::class,
-        'max' => \Validators\MaxValidator::class,
     ],
     'routeAppMiddleware' => [
         'trim' => \Middlewares\TrimMiddleware::class,

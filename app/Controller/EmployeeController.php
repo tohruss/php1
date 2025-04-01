@@ -6,10 +6,10 @@ use Model\Employee;
 use Model\Role;
 use Model\User;
 use Src\Request;
-use Src\Validator\Validator;
 use Src\View;
-
-
+use helpers\RequestHelp;
+use helpers\ResponseHelp;
+use Illuminate\Database\Capsule\Manager as Capsule;
 class EmployeeController
 {
     public function employees_list(): string
@@ -29,65 +29,68 @@ class EmployeeController
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
-            $validator = new Validator(
-                $request->all(),
-                Employee::$createValidationRules,
-                Employee::$createValidationMessages
-            );
+            // Валидация данных
+            $errors = RequestHelp::validate($request->all());
 
-            if ($validator->fails()) {
-                return new View('site.create', [
-                    'errors' => $validator->errors(),
-                    'old' => $request->all(),
-                    'roles' => $roles,
-                    'departaments' => $departaments,
-                    'subjects' => $subjects
-                ]);
+            if (!empty($errors)) {
+                ResponseHelp::redirectWithErrors('/create', $errors, $request->all());
             }
 
             try {
-                $data = $request->all();
+                // Начало транзакции
+                Capsule::connection()->transaction(function() use ($request) {
+                    $data = $request->all();
 
-                $user = User::create([
-                    'login' => $data['login'],
-                    'password' => $data['password'],
-                    'role_id' => $data['role_id']
-                ]);
-
-                $employee = Employee::create([
-                    'user_id' => $user->id,
-                    'last_name' => $data['last_name'],
-                    'first_name' => $data['first_name'],
-                    'middle_name' => $data['middle_name'] ?? null,
-                    'gender' => $data['gender'],
-                    'birth_date' => $data['birth_date'],
-                    'address' => $data['address'],
-                    'post' => $data['position']
-                ]);
-
-                if ($departament = \Model\Departament::find($data['department_id'])) {
-                    $departament->update(['user_id' => $user->id]);
-                }
-
-                if (!empty($data['subject_id'])) {
-                    $employee->subjects()->attach($data['subject_id'], [
-                        'hours' => $data['hours'] ?? '00:00'
+                    // Создание пользователя с хешированием пароля
+                    $user = User::create([
+                        'login' => $data['login'],
+                        'password' => md5($data['password']),
+                        'role_id' => $data['role_id']
                     ]);
-                }
+
+                    // Создание сотрудника
+                    $employee = Employee::create([
+                        'user_id' => $user->id,
+                        'last_name' => $data['last_name'],
+                        'first_name' => $data['first_name'],
+                        'middle_name' => $data['middle_name'] ?? null,
+                        'gender' => $data['gender'],
+                        'birth_date' => $data['birth_date'],
+                        'address' => $data['address'],
+                        'post' => $data['position']
+                    ]);
+
+                    // Обновление кафедры
+                    if ($departament = \Model\Departament::find($data['department_id'])) {
+                        $departament->update(['user_id' => $user->id]);
+                    }
+
+                    // Добавление дисциплины
+                    if (!empty($data['subject_id'])) {
+                        $employee->subjects()->attach($data['subject_id'], [
+                            'hours' => $data['hours'] ?? '00:00'
+                        ]);
+                    }
+                });
 
                 app()->route->redirect('/employees_list');
+
             } catch (\Exception $e) {
-                return new View('site.create', [
-                    'errors' => ['database' => ['Ошибка сохранения данных']],
-                    'old' => $request->all(),
-                    'roles' => $roles,
-                    'departaments' => $departaments,
-                    'subjects' => $subjects
-                ]);
+                ResponseHelp::redirectWithErrors(
+                    '/create',
+                    ['database' => ['Ошибка сохранения: ' . $e->getMessage()]],
+                    $request->all()
+                );
             }
         }
 
+        // Получение ошибок из сессии
+        $errors = ResponseHelp::getSessionErrors();
+        ResponseHelp::clearSessionData();
+
         return new View('site.create', [
+            'errors' => $errors,
+            'old' => $_SESSION['old'] ?? [],
             'roles' => $roles,
             'departaments' => $departaments,
             'subjects' => $subjects
@@ -129,8 +132,8 @@ class EmployeeController
     }
     public function editEmployee(int $id, Request $request): string
     {
+        // Проверка прав доступа
         $currentUser = app()->auth->user();
-
         if (!$currentUser->isDeaneryEmployee()) {
             app()->route->redirect('/hello');
         }
@@ -139,55 +142,61 @@ class EmployeeController
         $subjects = \Model\Subject::all();
 
         if ($request->method === 'POST') {
-            $validator = new Validator(
-                $request->all(),
-                Employee::$editValidationRules,
-                Employee::$editValidationMessages
-            );
+            // Валидация данных с использованием RequestHelp
+            $errors = RequestHelp::validateEdit($request->all(), $_FILES);
 
-            if ($validator->fails()) {
+            if (!empty($errors)) {
                 return new View('site.edit_employee', [
                     'employee' => $employee,
                     'subjects' => $subjects,
                     'hours' => $request->get('hours', '00:00'),
-                    'errors' => $validator->errors(),
+                    'errors' => $errors,
                     'old' => $request->all()
                 ]);
             }
 
             try {
-                $data = $request->all();
+                Capsule::connection()->transaction(function() use ($employee, $request) {
+                    $data = $request->all();
 
-                // Обработка загрузки аватара
-                if (!empty($_FILES['avatar']['tmp_name'])) {
-                    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/public/storage/avatars/';
-                    if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0755, true);
+                    // Обработка аватара
+                    if (!empty($_FILES['avatar']['tmp_name'])) {
+                        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/public/storage/avatars/';
+                        if (!is_dir($uploadDir)) {
+                            mkdir($uploadDir, 0755, true);
+                        }
+
+                        // Удаление старого аватара
+                        if ($employee->user->avatar && file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/' . $employee->user->avatar)) {
+                            unlink($_SERVER['DOCUMENT_ROOT'] . '/public/' . $employee->user->avatar);
+                        }
+
+                        // Сохранение нового аватара
+                        $extension = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+                        $filename = uniqid() . '.' . $extension;
+                        $destination = $uploadDir . $filename;
+
+                        if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
+                            $employee->user->avatar = 'storage/avatars/' . $filename;
+                            $employee->user->save();
+                        }
                     }
 
-                    $extension = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
-                    $filename = uniqid() . '.' . $extension;
-                    $destination = $uploadDir . $filename;
+                    // Обновление данных сотрудника
+                    $employee->update(['post' => $data['post']]);
 
-                    if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
-                        $employee->user->avatar = 'storage/avatars/' . $filename;
-                        $employee->user->save();
+                    // Обновление дисциплин и часов
+                    if (!empty($data['subject_id'])) {
+                        $employee->subjects()->sync([
+                            $data['subject_id'] => ['hours' => $data['hours'] ?? '00:00']
+                        ]);
+                    } else {
+                        $employee->subjects()->detach();
                     }
-                }
-
-                // Обновление должности
-                $employee->update(['post' => $data['post']]);
-
-                // Обновление дисциплин и часов
-                if (!empty($data['subject_id'])) {
-                    $employee->subjects()->sync([
-                        $data['subject_id'] => ['hours' => $data['hours'] ?? '00:00']
-                    ]);
-                } else {
-                    $employee->subjects()->detach();
-                }
+                });
 
                 app()->route->redirect('/employees_list?success=1');
+
             } catch (\Exception $e) {
                 return new View('site.edit_employee', [
                     'employee' => $employee,
@@ -199,6 +208,7 @@ class EmployeeController
             }
         }
 
+        // Подготовка данных для формы
         $hours = $employee->subjects->first()->pivot->hours ?? '00:00';
         $formattedHours = substr($hours, 0, 5);
 
@@ -207,7 +217,11 @@ class EmployeeController
             'subjects' => $subjects,
             'hours' => $formattedHours,
             'errors' => [],
-            'old' => $request->all()
+            'old' => [
+                'post' => $employee->post,
+                'subject_id' => $employee->subjects->first()->id ?? null,
+                'hours' => $formattedHours
+            ]
         ]);
     }
 }

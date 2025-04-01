@@ -1,16 +1,15 @@
-<h2>Регистрация нового пользователя</h2>
+<?php if (!empty($errors)): ?>
+    <div class="alert alert-danger">
+        <?php foreach ($errors as $field => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+                <?= str_replace(':field', $field, $message) ?><br>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
 <form method="post">
     <input name="csrf_token" type="hidden" value="<?= app()->auth::generateCSRF() ?>"/>
-    <?php if (isset($errors)): ?>
-        <div class="errors">
-            <?php foreach ($errors as $field => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <p class="error"><?= $message ?></p>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-
 
     <label>Логин
         <input type="text" name="login" value="<?= $old['login'] ?? '' ?>">

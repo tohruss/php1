@@ -15,7 +15,7 @@
                        value="<?= htmlspecialchars($old['login'] ?? '') ?>"
                        class="form-control <?= isset($errors['login']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['login'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['login']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['login']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -24,7 +24,7 @@
                 <input type="password" id="password" name="password"
                        class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['password'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['password']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['password']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -40,7 +40,7 @@
                     <?php endforeach; ?>
                 </select>
                 <?php if (isset($errors['role_id'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['role_id']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['role_id']) ?></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -55,7 +55,7 @@
                        value="<?= htmlspecialchars($old['last_name'] ?? '') ?>"
                        class="form-control <?= isset($errors['last_name']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['last_name'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['last_name']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['last_name']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -65,7 +65,7 @@
                        value="<?= htmlspecialchars($old['first_name'] ?? '') ?>"
                        class="form-control <?= isset($errors['first_name']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['first_name'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['first_name']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['first_name']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -75,7 +75,7 @@
                        value="<?= htmlspecialchars($old['middle_name'] ?? '') ?>"
                        class="form-control <?= isset($errors['middle_name']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['middle_name'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['middle_name']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['middle_name']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -92,7 +92,7 @@
                     </label>
                 </div>
                 <?php if (isset($errors['gender'])): ?>
-                    <div class="text-danger"><?= implode(', ', $errors['gender']) ?></div>
+                    <div style="color: red" class="text-danger"><?= implode(', ', $errors['gender']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -100,9 +100,10 @@
                 <label for="birth_date">Дата рождения:</label>
                 <input type="date" id="birth_date" name="birth_date"
                        value="<?= htmlspecialchars($old['birth_date'] ?? '') ?>"
+                       max="<?= date('Y-m-d') ?>"
                        class="form-control <?= isset($errors['birth_date']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['birth_date'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['birth_date']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['birth_date']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -112,7 +113,7 @@
                        value="<?= htmlspecialchars($old['address'] ?? '') ?>"
                        class="form-control <?= isset($errors['address']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['address'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['address']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['address']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -122,7 +123,7 @@
                        value="<?= htmlspecialchars($old['position'] ?? '') ?>"
                        class="form-control <?= isset($errors['position']) ? 'is-invalid' : '' ?>">
                 <?php if (isset($errors['position'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['position']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['position']) ?></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -144,7 +145,7 @@
                     <?php endforeach; ?>
                 </select>
                 <?php if (isset($errors['department_id'])): ?>
-                    <div class="invalid-feedback"><?= implode(', ', $errors['department_id']) ?></div>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['department_id']) ?></div>
                 <?php endif; ?>
             </div>
 
@@ -171,7 +172,7 @@
                            value="<?= htmlspecialchars($old['hours'] ?? '00:00') ?>"
                            class="<?= isset($errors['hours']) ? 'is-invalid' : '' ?>">
                     <?php if (isset($errors['hours'])): ?>
-                        <div class="invalid-feedback"><?= implode(', ', $errors['hours']) ?></div>
+                        <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['hours']) ?></div>
                     <?php endif; ?>
                 </div>
             </div>
