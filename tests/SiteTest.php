@@ -123,7 +123,7 @@ class SiteTest extends TestCase
         return [
             ['POST', ['login' => '', 'password' => ''], '<h3>{"login":["Поле login пусто"],"password":["Поле password пусто"]}</h3>'],
             ['POST', ['login' => 'wrong', 'password' => 'wrong'], '<h3>Вы ввели некорректные данные</h3>'],
-            ['POST', ['login' => 'dimasik', 'password' => 'tohrutop311www'], 'Location: /office'],
+            ['POST', ['login' => 'dimasik', 'password' => 'taraskindima123'], 'Location: /office'],
         ];
     }
 
