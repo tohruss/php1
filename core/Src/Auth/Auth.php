@@ -2,10 +2,21 @@
 
 namespace Src\Auth;
 
+use Model\User;
 use Src\Session;
 
 class Auth
 {
+
+    public static function byToken(string $token): bool {
+        $user = User::where('api_token', $token)->first();
+        if ($user) {
+            self::$user = $user;
+            return true;
+        }
+        return false;
+    }
+
     //Генерация нового токена для CSRF
     public static function generateCSRF(): string
     {
