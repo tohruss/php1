@@ -20,6 +20,7 @@ class EmployeeController
 
     public function createEmployee(Request $request): string
     {
+
         if (!app()->auth->user()->isAdmin()) {
             app()->route->redirect('/hello');
         }
@@ -53,11 +54,11 @@ class EmployeeController
                         'user_id' => $user->id,
                         'last_name' => $data['last_name'],
                         'first_name' => $data['first_name'],
-                        'middle_name' => $data['middle_name'] ?? null,
+                        'middle_name' => $data['middle_name'],
                         'gender' => $data['gender'],
                         'birth_date' => $data['birth_date'],
                         'address' => $data['address'],
-                        'post' => $data['position']
+                        'post' => $data['post']
                     ]);
 
                     // Обновление кафедры
@@ -219,7 +220,7 @@ class EmployeeController
             'errors' => [],
             'old' => [
                 'post' => $employee->post,
-                'subject_id' => $employee->subjects->first()->id ?? null,
+                'subject_id' => $employee->subjects->first()->id,
                 'hours' => $formattedHours
             ]
         ]);

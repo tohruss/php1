@@ -10,6 +10,7 @@ class Settings
 
     public function __construct(array $settings = [])
     {
+
         $this->_settings = $settings;
     }
 

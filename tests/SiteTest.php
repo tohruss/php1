@@ -1,6 +1,7 @@
 <?php
 
 use Model\User;
+use Src\Request;
 use PHPUnit\Framework\TestCase;
 
 class SiteTest extends TestCase
@@ -16,7 +17,7 @@ class SiteTest extends TestCase
         }
 
         // Создаем заглушку для класса Request.
-        $request = $this->createMock(\Src\Request::class);
+        $request = $this->createMock(Request::class);
         // Переопределяем метод all() и свойство method
         $request->expects($this->any())
             ->method('all')
@@ -100,7 +101,7 @@ class SiteTest extends TestCase
      */
     public function testLogin(string $httpMethod, array $userData, string $message): void
     {
-        $request = $this->createMock(\Src\Request::class);
+        $request = $this->createMock(Request::class);
         $request->expects($this->any())
             ->method('all')
             ->willReturn(array_merge($userData, ['csrf_token' => 'mocked_token']));
