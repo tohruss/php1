@@ -42,7 +42,6 @@ class EmployeeController
                 // Начало транзакции
                 Capsule::connection()->transaction(function() use ($request) {
                     $data = $request->all();
-                    var_dump($request);
 
                     // Создание пользователя с хешированием пароля
                     $user = User::create([

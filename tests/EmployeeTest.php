@@ -18,19 +18,6 @@ class EmployeeTest extends TestCase
             'db' => include $_SERVER['DOCUMENT_ROOT'] . '/config/db.php',
             'path' => include $_SERVER['DOCUMENT_ROOT'] . '/config/path.php',
         ]));
-
-        // Создание тестового администратора
-        $admin = User::firstOrCreate(
-            ['login' => 'dimasik_test'],
-            [
-                'password' => md5('taraskindima123'),
-                'role_id' => 1,
-            ]
-        );
-
-
-        // Авторизация администратора
-        app()->auth->login($admin);
     }
 
     /**
@@ -184,7 +171,7 @@ class EmployeeTest extends TestCase
                     'birth_date' => '1985-05-15',
                     'address' => 'ул. Лермонтова',
                     'post' => 'Преподаватель',
-                    'department_id' => 6, // Другая допустимая кафедра
+                    'department_id' => 6,
                     'subject_id' => 1,
                     'hours' => '15:30'
                 ],
