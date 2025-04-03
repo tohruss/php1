@@ -118,12 +118,12 @@
             </div>
 
             <div class="form-group">
-                <label for="position">Должность:</label>
-                <input type="text" id="position" name="position"
-                       value="<?= htmlspecialchars($old['position'] ?? '') ?>"
-                       class="form-control <?= isset($errors['position']) ? 'is-invalid' : '' ?>">
-                <?php if (isset($errors['position'])): ?>
-                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['position']) ?></div>
+                <label for="post">Должность:</label>
+                <input type="text" id="post" name="post"
+                       value="<?= htmlspecialchars($old['post'] ?? '') ?>"
+                       class="form-control <?= isset($errors['post']) ? 'is-invalid' : '' ?>">
+                <?php if (isset($errors['post'])): ?>
+                    <div style="color: red" class="invalid-feedback"><?= implode(', ', $errors['post']) ?></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -177,6 +177,6 @@
                 </div>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Зарегистрировать сотрудника</button>
+        <button class="btn btn-primary">Зарегистрировать сотрудника</button>
     </form>
 </div>

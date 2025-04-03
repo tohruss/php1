@@ -86,9 +86,9 @@ class RequestHelp
     }
 
     // Проверка должности
-    private static function checkPosition(string $position): bool
+    private static function checkPosition(string $post): bool
     {
-        return preg_match(Validation::NAME_PATTERN, $position);
+        return preg_match(Validation::NAME_PATTERN, $post);
     }
 
     // Проверка часов

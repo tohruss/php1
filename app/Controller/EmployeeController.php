@@ -29,18 +29,20 @@ class EmployeeController
         $departaments = \Model\Departament::all();
         $subjects = \Model\Subject::all();
 
+
         if ($request->method === 'POST') {
             // Валидация данных
-            $errors = RequestHelp::validate($request->all());
+          $errors = RequestHelp::validate($request->all());
 
-            if (!empty($errors)) {
-                ResponseHelp::redirectWithErrors('/create', $errors, $request->all());
-            }
+          if (!empty($errors)) {
+              ResponseHelp::redirectWithErrors('/create', $errors, $request->all());
+          }
 
             try {
                 // Начало транзакции
                 Capsule::connection()->transaction(function() use ($request) {
                     $data = $request->all();
+                    var_dump($request);
 
                     // Создание пользователя с хешированием пароля
                     $user = User::create([
